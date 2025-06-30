@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="style.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class='page'>
+      <div class='header'>
+        <div class="playersDiv">
+          <p class="playersList">People playing in this room</p>
+        </div>
+      </div>
+      <h1 class="barGamesTitle">WI Bar Games!!!</h1>
+      <p class="roomId"></p>
+      <div class="game-selection-screen">
+        <h3 class='selectedGame'></h3>
+        <input class="userName" placeholder="Enter your username here" />
+        <div class='games'>
+          <button class="barDice gameButton" data-game="barDice">Bar Dice</button>
+          <button class="shipCaptCrew gameButton" data-game="shipCaptCrew">Ship Captain Crew</button>
+        </div>
+        <div class="name-and-room-id">
+          <input class="enterRoomId" placeholder="Enter room ID to join room" />
+          <button class="joinRoom" type="submit">Join Room</button>
+        </div>
+        <!-- end of "game-selection-screen" -->
+      </div>
+      <div class="page-waiting-players hidden">
+        <button class="startCurrentGame hidden">Start The Game</button>
+        <button class="rollDiceCurrentGame hidden">Roll The Dice!</button>
+        <button class="callDice hidden">Call Dice!!</button>
+      </div>
+      <div class="page-game-table hidden">
+        <h1>Image of table and dice maybe</h1>
+      </div>
+      <div class="playing-game hidden">
+        <div class='playingGameHeader'>
+          <h3 class="turnAmt hidden"></h3>
+        </div>
+        <div class="wrapper">
+        </div>
+        <div class="shakeDiv">
+          <button class="shakeDice gameButton" data-game="shakeTheDice">Shake The Dice Again</button>
+          <button class="startNextRnd">Start Next Round</button>
+          <button class="setTone">Stop your turn</button>
+        </div>
+      </div>
+    </div>
+    <dialog id="endOfGame">
+      <div class="dialogDiv">
+        <h1 class='playerScore'></h1>
+        <button class="startGameEOG">Next Players Turn</button>
+        <div class="showDice"></div>
+      </div>
+    </dialog>
+    <dialog id="startGameDialog">
+      <div class="dialogDiv">
+        <h1>You have to select a game or start the game to play first</h1>
+        <button class="startGameDialogBtn">Click here and pick a game</button>
+      </div>
+    </dialog>
+    <dialog class="noUserNameDialog">
+      <div class="dialogDiv">
+        <h1>You have not entered a user name!</h1>
+        <button class="noUserNameBtn">Click here to go back and type in a username</button>
+      </div>
+    </dialog>
+    <dialog class="cheatingDialog">
+      <div class="dialogDiv">
+        <h1>You have not entered a user name!</h1>
+        <button class="cheatingDialogBtn">Click here to go back and type in a username</button>
+      </div>
+    </dialog>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

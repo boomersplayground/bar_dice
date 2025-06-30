@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="style.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class='page'>
+      <p class="roomId"></p>
+      <h1>WI Bar Games!!!</h1>
+      <!-- Game selection/RoomId selection -->
+      <!-- Play game -->
+      <!-- Waiting for game -->
+      <div class="game-selection-screen">
+        <h3 class='selectedGame'></h3>
+        <div class='games'>
+          <button class="barDice gameButton" data-game="barDice">Bar Dice</button>
+          <button class="shipCaptCrew gameButton" data-game="shipCaptCrew">Ship Captain Crew</button>
+        </div>
+        <div class="name-and-room-id">
+          <input class="enterRoomId" placeholder="Enter room ID to join room" />
+          <button class="joinRoom" type="submit">Join Room</button>
+        </div>
+      </div>
+      <div class="playing-game hidden">
+        <div class='currentScore'>
+          <h3>Player 1: <span class='playerOne'></span></h3>
+          <h3>Player 2: <span class='playerTwo'></span></h3>
+        </div>
+        <div class='header'>
+          <h3 class="turnAmt hidden"></h3>
+        </div>
+        <div class="wrapper">
+        </div>
+        <div class="shakeDiv">
+          <button class="startGame">Start your game!</button>
+          <button class="shakeDice gameButton" data-game="shakeTheDice">Shake The Dice Again</button>
+          <button class="startNextRnd">Start Next Round</button>
+          <button class="setTone">Stop your turn</button>
+        </div>
+      </div>
+    </div>
+    <dialog id="endOfGame">
+      <div class="dialogDiv">
+        <h1 class='playerScore'></h1>
+        <button class="startGameEOG">Next Players Turn</button>
+        <div class="showDice"></div>
+      </div>
+    </dialog>
+    <dialog id="startGameDialog">
+      <div class="dialogDiv">
+        <h1>You have to select a game or start the game to play first</h1>
+        <button class="startGameDialogBtn">Click here and pick a game</button>
+      </div>
+    </dialog>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
