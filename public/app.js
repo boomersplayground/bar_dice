@@ -97,19 +97,15 @@ const diceClick = (e) => {
 
 
 const barDice = (e) => {
-  const user = userName.value.trim()
+  const username = userName.value.trim()
   const gameType = e.target.dataset.game
 
-  if (!user) {
+  if (!username) {
     noUserNameDialog.showModal()
     return true
   }
-  const payload = {
-    gameType,
-    user
-  }
 
-  socket.emit('startRoom', payload)
+  socket.emit('startRoom', { username, gameType })
   selectedGame.innerText = 'You have selected Bar Dice'
   shipCaptCrewBtn.classList.remove('active')
   barDiceBtn.classList.add('active')
@@ -150,9 +146,10 @@ const game = () => {
   })
 }
 
-const startGame = ({ gameRoom, users, user, roomName }) => {
-  console.log("ggrr ", gameRoom, users, user)
-  gameRoomName = roomName
+const startGame = ({ gameRoom, users, user, userId }) => {
+  console.log("==== START GAME ====")
+  console.log(gameRoom, users, user, userId)
+  console.log("==== START GAME ====")
   barGamesTitle.replaceChildren()
   const { id, game } = gameRoom
   const div = document.createElement('div')
@@ -160,15 +157,17 @@ const startGame = ({ gameRoom, users, user, roomName }) => {
   const p2 = document.createElement('p')
   const p3 = document.createElement('p')
   const p4 = document.createElement('p')
-  p.innerText = `${user} you started a ${game} game!!!`
-  p2.innerText = `Room Name: ${roomName}`
+  const p5 = document.createElement('p')
+  p.innerText = `${user[userId].username} you started a ${game} game!!!`
+  p2.innerText = `Room Name: ${gameRoom.roomName}`
   p2.classList.add('pplInRoom')
-  p3.innerText = `${user} you started a ${game} game!!!`
+  p3.innerText = `${user[userId].username} you started a ${game} game!!!`
   p4.innerText =  `Press "Start Game" to throw first roll`
+  p5.innerText = `Room ID: ${gameRoom.id}`
   barGamesTitle.append(p3)
   barGamesTitle.append(p4)
   div.append(p)
-  div.append(p2)
+  div.append(p2, p5)
   page.prepend(div)
   waitingOnPlayersPage.classList.remove('hidden')
   startCurrentGameBtn.classList.remove('hidden')
@@ -177,8 +176,32 @@ const startGame = ({ gameRoom, users, user, roomName }) => {
 }
 
 const youJoinedGame = (data) => {
-  const { user } = data
+  const { user, userId, gameRoom } = data
+  const { users, game } = gameRoom
+  let gameCreator = ''
+  for (const key in gameRoom.users) {
+    if (key === gameRoom.currentlyPlaying) {
+      gameCreator = gameRoom.users[key].username
+    }
+  }
+
   gameSelectionPage.classList.add('hidden')
+  barGamesTitle.replaceChildren()
+  const div = document.createElement('div')
+  const p = document.createElement('p')
+  const p3 = document.createElement('p')
+  const p5 = document.createElement('p')
+  div.classList.add("gameDiv")
+  p.innerText = `${gameCreator} has started a ${game} game`
+  p3.innerText =  `Wait for ${gameCreator} to finish their turn`
+  barGamesTitle.append(p3)
+  div.append(p)
+  div.append(p5)
+  page.prepend(div)
+  waitingOnPlayersPage.classList.remove('hidden')
+  startCurrentGameBtn.classList.remove('hidden')
+  gameSelectionPage.classList.add('hidden')
+  addUsers({ users })
 }
 
 const addUsers = ({ users }) => {
@@ -186,13 +209,14 @@ const addUsers = ({ users }) => {
   playersNameArea.replaceChildren()
   const p = document.createElement('p')
   const usersUl = document.createElement('ul')
-  users.forEach(user => {
+  for (const key in users) {
+    console.log("a ", users[key])
     const userLi = document.createElement('li')
     userLi.classList.add('user')
-    userLi.setAttribute('name', user)
-    userLi.innerText = `${user}`
+    userLi.setAttribute('username', users[key].username)
+    userLi.innerText = `${users[key].username}`
     usersUl.append(userLi)
-  })
+  }
 
   p.innerText = "People playing in this room!"
   playersNameArea.append(p)
@@ -279,11 +303,10 @@ joinRoom.addEventListener('click', (e) => {
   }
 
   const payload = {
-    roomName: trimmedRoomId,
-    user: trimmedUsername
+    roomId: trimmedRoomId,
+    username: trimmedUsername
   }
-  console.log('pp ', payload)
-  socket.emit('roomName', payload)
+  socket.emit('roomId', payload)
 })
 
 startGameDialogBtn.addEventListener('click', () => {
@@ -361,9 +384,9 @@ game()
 ====================== */
 
 socket.on('connect', () => {
-  socket.on('roomId', ({ gameRoom, users, user, roomName }) => {
-    console.log('roomID socket ', gameRoom, users, roomName)
-    startGame({ gameRoom, users, user, roomName })
+  socket.on('roomId', ({ gameRoom, users, user, userId }) => {
+    console.log('roomID socket ', users)
+    startGame({ gameRoom, users, user, userId })
   })
 
   socket.on('youJoinedRoom', data => {

@@ -5,6 +5,7 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
+const { createRoomName } = require('./utilities/cities')
 
 const rooms = {}
 
@@ -33,36 +34,47 @@ const areYouCheating = ({ dice, serverDice }) => {
 }
 
 io.on('connection', (socket) => {
-  socket.on('startRoom', data => {
-    console.log("Start current game", data)
-    const { user, gameType } = data.payload
+  socket.on('startRoom', ({ username, gameType }) => {
+    console.log("Start current game", username, gameType)
     const game = readableGame({ game: gameType })
     const gameRoom = rooms[socket.id] = {}
     const userId = uuidv4()
+    const roomName = createRoomName()
     gameRoom["gameStarted"] = false
+    gameRoom["currentlyPlaying"] = userId
     gameRoom["game"] = game
-    gameRoom["users"] = []
-    gameRoom["users"][userId] = { name: user }
-    gameRoom["gameCreator"] = user
+    gameRoom['roomName'] = roomName
+    gameRoom["users"] = {}
+    gameRoom["users"][userId] = { username: username }
     gameRoom["users"][userId]["turnsRolled"] = 0
     gameRoom["id"] = socket.id
-    const users = rooms[socket.id]['users']
+    const users = gameRoom.users
+    const user = {
+      [userId]: {
+        username: username
+      }
+    }
+    console.log('a ', user)
     socket.join(socket.id)
-    console.log('u ', users)
-    socket.emit('roomId', { gameRoom, users, userId, username: user })
+    socket.emit('roomId', { gameRoom, users, user, userId })
   })
 
-  socket.on('roomId', ({ roomId, user }) => {
-    console.log('ri ', roomId, 'su ', user)
+  socket.on('roomId', ({ roomId, username }) => {
+    console.log('ri ', roomId, 'su ', username)
     const userId = uuidv4()
     socket.join(roomId)
     const gameRoom = rooms[roomId]
-    gameRoom["users"][userId] = { name: user }
+    gameRoom["users"][userId] = { username: username }
     gameRoom["users"][userId]["turnsRolled"] = 0
     const users = rooms[roomId]["users"]
-    console.log('bad ', users)
-    socket.emit('youJoinedRoom', { user })
-    io.to(roomId).emit("users", { roomId, user, users })
+    const user = {
+      [userId]: {
+        username: username
+      }
+    }
+    console.log('bad ', user)
+    socket.emit('youJoinedRoom', { gameRoom, userId, user })
+    io.to(roomId).emit("users", { roomId, username, users })
   })
 
   socket.on('startCurrentGame', ({ id, username, userId }) => {
