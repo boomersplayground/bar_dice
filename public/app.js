@@ -50,7 +50,7 @@ const selectedGame = document.querySelector('.selectedGame')
 const finalDice = document.querySelector('.showDice')
 const roomIdP = document.querySelector('.roomId')
 const enterRoomId = document.querySelector('.enterRoomId')
-const joinRoom= document.querySelector('.joinRoom')
+const joinRoom = document.querySelector('.joinRoom')
 const userName = document.querySelector('.userName')
 const playersNameArea = document.querySelector('.playersDiv')
 const barGamesTitle = document.querySelector('.barGamesTitle')
@@ -146,11 +146,13 @@ const game = () => {
   })
 }
 
-const startGame = ({ gameRoom, users, user, userId }) => {
-  console.log("==== START GAME ====")
-  console.log(gameRoom, users, user, userId)
-  console.log("==== START GAME ====")
+const startGame = ({ gameRoom, user, userId }) => {
+  // console.log("==== START GAME ====")
+  // console.log(gameRoom, user, userId)
+  // console.log("==== START GAME ====")
   barGamesTitle.replaceChildren()
+  const currentUsername = user[userId].username
+  const users = gameRoom.users
   const { id, game } = gameRoom
   const div = document.createElement('div')
   const p = document.createElement('p')
@@ -158,26 +160,27 @@ const startGame = ({ gameRoom, users, user, userId }) => {
   const p3 = document.createElement('p')
   const p4 = document.createElement('p')
   const p5 = document.createElement('p')
-  p.innerText = `${user[userId].username} you started a ${game} game!!!`
-  p2.innerText = `Room Name: ${gameRoom.roomName}`
-  p2.classList.add('pplInRoom')
-  p3.innerText = `${user[userId].username} you started a ${game} game!!!`
-  p4.innerText =  `Press "Start Game" to throw first roll`
-  p5.innerText = `Room ID: ${gameRoom.id}`
+  p.innerText = `Room Name: ${gameRoom.roomName}`
+  p.classList.add('pplInRoom')
+  p2.innerText = `${currentUsername} you started a ${game} game!!!`
+  p3.innerText = `Press "Start Game" to throw first roll`
+  p4.innerText = `Room ID: ${id}`
+  barGamesTitle.append(p2)
   barGamesTitle.append(p3)
-  barGamesTitle.append(p4)
-  div.append(p)
-  div.append(p2, p5)
+  div.append(p, p4)
   page.prepend(div)
   waitingOnPlayersPage.classList.remove('hidden')
   startCurrentGameBtn.classList.remove('hidden')
   gameSelectionPage.classList.add('hidden')
+  localStorage.setItem('gameRoom', JSON.stringify(gameRoom))
+  localStorage.setItem('user', JSON.stringify(user))
   addUsers({ users })
 }
 
-const youJoinedGame = (data) => {
-  const { user, userId, gameRoom } = data
+const youJoinedGame = ({ gameRoom, userId, user }) => {
   const { users, game } = gameRoom
+  console.log('yjg ', gameRoom)
+  const currentUsername = user[userId].username
   let gameCreator = ''
   for (const key in gameRoom.users) {
     if (key === gameRoom.currentlyPlaying) {
@@ -189,23 +192,30 @@ const youJoinedGame = (data) => {
   barGamesTitle.replaceChildren()
   const div = document.createElement('div')
   const p = document.createElement('p')
+  const p2 = document.createElement('p')
   const p3 = document.createElement('p')
-  const p5 = document.createElement('p')
+  const p4 = document.createElement('p')
   div.classList.add("gameDiv")
   p.innerText = `${gameCreator} has started a ${game} game`
-  p3.innerText =  `Wait for ${gameCreator} to finish their turn`
+  p2.innerText = `Room Name:  ${gameRoom.roomName}`
+  p3.innerText = `Wait for ${gameCreator} to finish their turn`
+  p4.innerText = `Room ID:  ${gameRoom.id}`
   barGamesTitle.append(p3)
   div.append(p)
-  div.append(p5)
+  div.append(p2)
+  div.append(p4)
   page.prepend(div)
   waitingOnPlayersPage.classList.remove('hidden')
   startCurrentGameBtn.classList.remove('hidden')
   gameSelectionPage.classList.add('hidden')
+
+  localStorage.setItem('gameRoom', JSON.stringify(gameRoom))
+  localStorage.setItem('user', JSON.stringify(user))
   addUsers({ users })
 }
 
 const addUsers = ({ users }) => {
-  console.log("addUsers ", users)
+  // console.log("addUsers ", users)
   playersNameArea.replaceChildren()
   const p = document.createElement('p')
   const usersUl = document.createElement('ul')
@@ -232,7 +242,7 @@ const playTheGame = ({ player }) => {
 }
 
 const drawDice = ({ player }) => {
-  console.log('ll ', player)
+  console.log('dd ', player)
   const { dice } = player
   const diceForLocalStorage = JSON.stringify(dice)
   // localStorage.setItem("dice", diceForLocalStorage)
@@ -255,7 +265,7 @@ const drawDice = ({ player }) => {
 
 const drawTheNewThrow = ({ user, username, player }) => {
   barGamesTitle.replaceChildren()
-  const p = document.createElement('p') 
+  const p = document.createElement('p')
   const numOfRolls = player.turnsRolled
 
   if (user === username) {
@@ -293,7 +303,7 @@ const endPlayersTurn = ({ finalScore, player }) => {
 ================ */
 joinRoom.addEventListener('click', (e) => {
   e.preventDefault()
-  
+
   const trimmedUsername = userName.value.trim()
   const trimmedRoomId = enterRoomId.value.trim()
 
@@ -337,7 +347,9 @@ shipCaptCrewBtn.addEventListener('click', () => {
 })
 
 startCurrentGameBtn.addEventListener('click', () => {
-  socket.emit('startCurrentGame', { gameRoomName })
+  const gameRoom = JSON.parse(localStorage.getItem('gameRoom'))
+  const user = JSON.parse(localStorage.getItem('user'))
+  socket.emit('startCurrentGame', { gameRoom, user })
 })
 
 rollDiceCurrentGameBtn.addEventListener('click', () => {
@@ -384,17 +396,17 @@ game()
 ====================== */
 
 socket.on('connect', () => {
-  socket.on('roomId', ({ gameRoom, users, user, userId }) => {
-    console.log('roomID socket ', users)
-    startGame({ gameRoom, users, user, userId })
+  socket.on('roomId', ({ gameRoom, user, userId }) => {
+    // console.log('roomID socket ', users)
+    startGame({ gameRoom, user, userId })
   })
 
-  socket.on('youJoinedRoom', data => {
-    console.log('youJoinedRoom socket ', data)
-    youJoinedGame(data)
+  socket.on('youJoinedRoom', ({ gameRoom, userId, user }) => {
+    // console.log('youJoinedRoom socket ', data)
+    youJoinedGame({ gameRoom, userId, user })
   })
 
-  socket.on('users', ({ users })=> {
+  socket.on('users', ({ users }) => {
     console.log('user socket ', users)
     addUsers({ users })
   })
@@ -414,12 +426,12 @@ socket.on('connect', () => {
     cheatingDialog.showModal()
   })
 
-  socket.on('itWorks', ({ player, finalScore}) => {
+  socket.on('itWorks', ({ player, finalScore }) => {
     endPlayersTurn({ player, finalScore })
     console.log('itWorks', player, finalScore)
   })
 
-  socket.on('stillWorks', ({ player, finalScore}) => {
+  socket.on('stillWorks', ({ player, finalScore }) => {
     console.log('stillWorks', player, finalScore)
     endRollersTurn({ player, finalScore })
   })

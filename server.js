@@ -23,6 +23,11 @@ const readableGame = ({ game }) => {
 
 const areYouCheating = ({ dice, serverDice }) => {
   const convertedDice = JSON.parse(dice)
+  const user = {
+    [userId]: {
+      username: username
+    }
+  }
 
   for (let i = 0; i < serverDice.length; i++) {
     if (serverDice[i].value !== convertedDice[i].value) {
@@ -48,19 +53,18 @@ io.on('connection', (socket) => {
     gameRoom["users"][userId] = { username: username }
     gameRoom["users"][userId]["turnsRolled"] = 0
     gameRoom["id"] = socket.id
-    const users = gameRoom.users
     const user = {
       [userId]: {
+        id: userId,
         username: username
       }
     }
-    console.log('a ', user)
     socket.join(socket.id)
-    socket.emit('roomId', { gameRoom, users, user, userId })
+    socket.emit('roomId', { gameRoom, user, userId })
   })
 
   socket.on('roomId', ({ roomId, username }) => {
-    console.log('ri ', roomId, 'su ', username)
+    // console.log('ri ', roomId, 'su ', username)
     const userId = uuidv4()
     socket.join(roomId)
     const gameRoom = rooms[roomId]
@@ -69,6 +73,7 @@ io.on('connection', (socket) => {
     const users = rooms[roomId]["users"]
     const user = {
       [userId]: {
+        id: userId,
         username: username
       }
     }
@@ -77,9 +82,11 @@ io.on('connection', (socket) => {
     io.to(roomId).emit("users", { roomId, username, users })
   })
 
-  socket.on('startCurrentGame', ({ id, username, userId }) => {
+  socket.on('startCurrentGame', ({ gameRoom, user }) => {
+    const { id } = gameRoom
     const users = rooms[id]['users']
-    const player = rooms[id]["users"][userId]
+    const player = rooms[id]["users"][user.id]
+    console.log('pp ', player)
     const playersDice = player["dice"] = []
 
     for (let i = 0; i < 5; i++) {
@@ -89,8 +96,7 @@ io.on('connection', (socket) => {
       playersDice.push(dice)
     }
 
-    console.log("here", player)
-    io.to(id).emit('someoneStartedPlaying', { username, player, userId })
+    io.to(id).emit('someoneStartedPlaying', { gameRoom, user })
   })
 
   socket.on('rollTheDice', data => {
@@ -115,7 +121,7 @@ io.on('connection', (socket) => {
     // }
 
     serverDice.length = 0
-    player.turnsRolled ++
+    player.turnsRolled++
 
     for (const die of convertedDice) {
       if (die.isActive) {
