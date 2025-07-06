@@ -9,13 +9,18 @@
   <body>
     <div class='page'>
       <div class='header'>
-        <div class="playersDiv">
-          <p class="playersList">People playing in this room</p>
+        <div class='roomInfo'>
+          <p class="roomName"></p>
+          <p class="roomId"></p>
+        </div>
+        <div class='playersInRoom'>
+          <div class="playersDiv">
+            <p class="playersList">People playing in this room</p>
+          </div>
         </div>
       </div>
       <h1 class="barGamesTitle">WI Bar Games!!!</h1>
-      <p class="roomId"></p>
-      <div class="game-selection-screen">
+      <div class="gameSelectionScreen">
         <h3 class='selectedGame'></h3>
         <input class="userName" placeholder="Enter your username here" />
         <div class='games'>
@@ -28,15 +33,16 @@
         </div>
         <!-- end of "game-selection-screen" -->
       </div>
-      <div class="page-waiting-players hidden">
-        <button class="startCurrentGame hidden">Start The Game</button>
-        <button class="rollDiceCurrentGame hidden">Roll The Dice!</button>
-        <button class="callDice hidden">Call Dice!!</button>
+      <div class="waitingOnGameScreen hidden">
+        <p class='gameTitle'></p>
+        <button class="startCurrentGame">Start The Game</button>
+        <button class="rollDiceCurrentGame">Roll The Dice!</button>
+        <button class="callDice">Call Dice!!</button>
       </div>
       <div class="page-game-table hidden">
         <h1>Image of table and dice maybe</h1>
       </div>
-      <div class="playing-game hidden">
+      <div class="playingGameScreen hidden">
         <div class='playingGameHeader'>
           <h3 class="turnAmt hidden"></h3>
         </div>

@@ -40,7 +40,7 @@ const areYouCheating = ({ dice, serverDice }) => {
 
 io.on('connection', (socket) => {
   socket.on('startRoom', ({ username, gameType }) => {
-    console.log("Start current game", username, gameType)
+    // console.log("Start current game", username, gameType)
     const game = readableGame({ game: gameType })
     const gameRoom = rooms[socket.id] = {}
     const userId = uuidv4()
@@ -84,8 +84,8 @@ io.on('connection', (socket) => {
 
   socket.on('startCurrentGame', ({ gameRoom, user }) => {
     const { id } = gameRoom
-    const users = rooms[id]['users']
-    const player = rooms[id]["users"][user.id]
+    const userId = Object.keys(user)[0]
+    const player = gameRoom["users"][userId]
     console.log('pp ', player)
     const playersDice = player["dice"] = []
 
@@ -96,7 +96,8 @@ io.on('connection', (socket) => {
       playersDice.push(dice)
     }
 
-    io.to(id).emit('someoneStartedPlaying', { gameRoom, user })
+    console.log('blah ', gameRoom.users[userId])
+    io.to(id).emit('someoneStartedPlaying', { gameRoom, userId })
   })
 
   socket.on('rollTheDice', data => {
