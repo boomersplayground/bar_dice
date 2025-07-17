@@ -24,7 +24,7 @@ const setToneBtn = document.querySelector('.setTone')
 const startNextRndBtn = document.querySelector('.startNextRnd')
 const gameSelectionPage = document.querySelector('.game-selection-screen')
 const playingGame = document.querySelector('.playing-game')
-const rollDiceCurrentGameBtn = document.querySelector('.rollDiceCurrentGame')
+const rollDiceBtn = document.querySelector('.rollDice')
 const callDiceBtn = document.querySelector('.callDice')
 const noUserNameBtn = document.querySelector('.noUserNameBtn')
 const cheatingDialogBtn = document.querySelector('.cheatingDialogBtn')
@@ -60,16 +60,19 @@ const playersNameArea = document.querySelector('.playersDiv')
 const barGamesTitle = document.querySelector('.barGamesTitle')
 const gameTitle = document.querySelector('.gameTitle')
 
+let userId
+let gameId
 /* ===================
   * Gameplay functions
 =================== */
 
-const diceClick = (e) => {
+const diceClick = (e, user) => {
+  // console.log('u ', user)
   const dieNumber = parseInt(e.target.dataset.number)
   const isActive = e.target.classList.contains('active')
 
   if (dieNumber === 1) return
-  if (!gameObject.hasOneBeenFound) return
+  if (!user.hasOneBeenFound) return
 
   isActive ? e.target.classList.remove('active') : e.target.classList.add('active')
 }
@@ -98,8 +101,6 @@ const shipCaptCrew = (e) => {
 }
 
 const game = () => {
-  // resetGame()
-
   diceGameButtons.forEach(e => {
     const game = e.dataset.game
 
@@ -119,20 +120,20 @@ const game = () => {
   })
 }
 
-const startGame = ({ gameRoom, user, userId }) => {
-  // console.log("==== START GAME ====")
-  // console.log(gameRoom, user, userId)
-  // console.log("==== START GAME ====")
+const startGame = ({ gameRoom, user }) => {
   barGamesTitle.replaceChildren()
-  const currentUsername = user[userId].username
-  const users = gameRoom.users
-  const { id, game } = gameRoom
+  const { id, game, users } = gameRoom
+  const currentUserId = user.id
+
+  userId = currentUserId
+  gameId = id
+
   const div = document.createElement('div')
   const p = document.createElement('p')
   const p2 = document.createElement('p')
   roomName.innerText = `Room Name: ${gameRoom.roomName}`
   roomId.innerText = `Room ID: ${id}`
-  p.innerText = `${currentUsername} you started a ${game} game!!!`
+  p.innerText = `${user.username} you started a ${game} game!!!`
   p.classList.add('center')
   p2.innerText = `Press "Start Game" to throw first roll`
   p2.classList.add('center')
@@ -144,16 +145,12 @@ const startGame = ({ gameRoom, user, userId }) => {
   newPlayers({ users })
 }
 
-const youJoinedGame = ({ gameRoom, userId, user }) => {
-  const { users, game } = gameRoom
-  console.log('yjg ', gameRoom)
-  const currentUsername = user[userId].username
-  let gameCreator = ''
-  for (const key in gameRoom.users) {
-    if (key === gameRoom.currentlyPlaying) {
-      gameCreator = gameRoom.users[key].username
-    }
-  }
+const youJoinedGame = ({ gameRoom, user }) => {
+  const { currentlyPlaying, users } = gameRoom
+  const gameCreator = users.find(user => user.id === currentlyPlaying)
+
+  user.id = user.id
+  gameId = gameRoom.id
 
   barGamesTitle.replaceChildren()
   const div = document.createElement('div')
@@ -163,7 +160,7 @@ const youJoinedGame = ({ gameRoom, userId, user }) => {
   const p4 = document.createElement('p')
   div.classList.add("gameDiv")
   p2.innerText = `Room Name:  ${gameRoom.roomName}`
-  p3.innerText = `Wait for ${gameCreator} to finish their turn`
+  p3.innerText = `Wait for ${gameCreator.username} to finish their turn`
   p4.innerText = `Room ID:  ${gameRoom.id}`
   barGamesTitle.append(p3)
   div.append(p)
@@ -178,12 +175,12 @@ const youJoinedGame = ({ gameRoom, userId, user }) => {
 }
 
 const newPlayers = ({ users }) => {
-  // console.log("newPlayers ", users)
+  // console.log("NP ", users)
   playersNameArea.replaceChildren()
   const p = document.createElement('p')
   const usersUl = document.createElement('ul')
   for (const key in users) {
-    console.log("a ", users[key])
+    // console.log("a ", users[key])
     const userLi = document.createElement('li')
     userLi.classList.add('user')
     userLi.setAttribute('username', users[key].username)
@@ -196,65 +193,58 @@ const newPlayers = ({ users }) => {
   playersNameArea.append(usersUl)
 }
 
-const drawDice = ({ player }) => {
-  console.log('dd ', player)
-  const { dice } = player
-  roomId.replaceChildren()
+const drawDice = ({ user, gameRoom, isPlayer }) => {
+  const { dice } = user
+  // console.log('3 ', gameId)
   const diceWrapper = document.createElement('div')
   diceWrapper.classList.add('diceWrapper')
   dice.forEach(die => {
     const dice = document.createElement('div')
     die.value === 1 ? dice.classList.add('active') : ''
-    die.value === 1 ? gameObject.hasOneBeenFound = true : ''
+    die.value === 1 ? gameRoom.hasOneBeenFound = true : ''
     die.isActive ? dice.classList.add('active') : ''
     dice.classList.add('dice', `dice${die.value}`)
     dice.style.backgroundImage = `url(./img/dice${die.value}.png)`
     dice.setAttribute('data-number', die.value)
-    dice.addEventListener('click', (e) => diceClick(e))
-    diceWrapper.appendChild(dice)
+    isPlayer ? dice.addEventListener('click', (e) => diceClick(e, user)) : null
+    diceWrapper.append(dice)
   })
-  roomId.append(diceWrapper)
+  barGamesTitle.append(diceWrapper)
 }
 
-const drawTheNewThrow = ({ gameRoom, userId }) => {
-  barGamesTitle.replaceChildren()
-  const user = JSON.parse(localStorage.getItem('user'))
-  console.log('blah ', user[userId])
+const drawTheNewThrow = ({ gameRoom, user }) => {
   const p = document.createElement('p')
-  const player = gameRoom.users[userId]
-  const username = gameRoom.users[userId].username
-  const numOfRolls = player.turnsRolled
+  barGamesTitle.replaceChildren()
 
-  if (user[userId]) {
-    console.log('isUser')
+  if (userId === user.id) {
+    // console.log('isplayer')
+    const isPlayer = true
     p.classList.add('whoIsPlaying')
-    p.innerText = `You have thrown ${numOfRolls} time${numOfRolls === 1 ? '' : 's'}`
+    p.innerText = `You have thrown ${user.numOfRolls} time${user.numOfRolls === 1 ? '' : 's'}`
     barGamesTitle.append(p)
+    drawDice({ user, gameRoom, isPlayer })
   } else {
-    console.log('isNotUser')
+    // console.log('isnotplayer')
+    const isPlayer = false
     p.classList.add('whoIsPlaying')
-    p.innerText = `${username} is playing`
+    p.innerText = `${user.username} is playing`
     barGamesTitle.append(p)
+    drawDice({ user, gameRoom, isPlayer })
   }
-  drawDice({ player })
+
+  startCurrentGameBtn.classList.add('hidden')
 }
 
-const endRollersTurn = ({ player, finalScore }) => {
+const endPlayersTurn = ({ finalScore, user, gameRoom }) => {
   const p = document.querySelector(".whoIsPlaying")
   const p1 = document.createElement('p')
-  p1.classList.add('score', 'center')
-  p1.innerText = `You rolled ${finalScore}`
-  p.append(p1)
-  console.log('p ', player, 'f ', finalScore)
-}
-
-const endPlayersTurn = ({ finalScore, player }) => {
-  const p = document.querySelector(".whoIsPlaying")
-  const p1 = document.createElement('p')
+  drawDice({ user, gameRoom, isPlayer })
+  rollDiceBtn.classList.add('hidden')
+  callDiceBtn.classList.add('hidden')
   p1.classList.add('score', 'center')
   p1.innerText = `${player.name} rolled ${finalScore}`
   p.append(p1)
-  console.log('p ', player, 'f ', finalScore)
+  // console.log('p ', player, 'f ', finalScore)
 }
 
 /* ================
@@ -308,31 +298,48 @@ shipCaptCrewBtn.addEventListener('click', () => {
 startCurrentGameBtn.addEventListener('click', () => {
   const gameRoom = JSON.parse(localStorage.getItem('gameRoom'))
   const user = JSON.parse(localStorage.getItem('user'))
-  socket.emit('startCurrentGame', { gameRoom, user })
+  socket.emit('startCurrentGame', { gameId, userId })
 })
 
-rollDiceCurrentGameBtn.addEventListener('click', () => {
+rollDiceBtn.addEventListener('click', () => {
   const allDice = document.querySelectorAll('.dice')
-  const dice = {}
+  const localDice = {}
 
   allDice.forEach((die, index) => {
     const dieNumber = Number(die.dataset.number)
     if (die.classList.contains('active')) {
-      dice[index] = {}
-      dice[index]["isActive"] = true
-      dice[index]["value"] = dieNumber
+      localDice[index] = {}
+      localDice[index]["isActive"] = true
+      localDice[index]["value"] = dieNumber
     } else {
-      dice[index] = {}
-      dice[index]["isActive"] = false
-      dice[index]["value"] = dieNumber
+      localDice[index] = {}
+      localDice[index]["isActive"] = false
+      localDice[index]["value"] = dieNumber
     }
   })
 
-  socket.emit('rollTheDice', { dice, gameRoomName })
+  socket.emit('rollTheDice', { localDice, gameId, userId })
 })
 
 callDiceBtn.addEventListener('click', () => {
-  console.log('yo')
+  const allDice = document.querySelectorAll('.dice')
+  const localDice = {}
+
+  allDice.forEach((die, index) => {
+    const dieNumber = Number(die.dataset.number)
+    if (die.classList.contains('active')) {
+      localDice[index] = {}
+      localDice[index]["isActive"] = true
+      localDice[index]["value"] = dieNumber
+    } else {
+      localDice[index] = {}
+      localDice[index]["isActive"] = false
+      localDice[index]["value"] = dieNumber
+    }
+  })
+
+  socket.emit('callDice', { localDice, gameId, userId })
+
 })
 
 /* ===============
@@ -355,29 +362,28 @@ game()
 ====================== */
 
 socket.on('connect', () => {
-  socket.on('roomId', ({ gameRoom, user, userId }) => {
-    // console.log('roomID socket ', users)
-    startGame({ gameRoom, user, userId })
+  socket.on('roomId', ({ gameRoom, user }) => {
+    startGame({ gameRoom, user })
   })
 
-  socket.on('youJoinedRoom', ({ gameRoom, userId, user }) => {
+  socket.on('youJoinedRoom', ({ gameRoom, user }) => {
     // console.log('youJoinedRoom socket ', data)
-    youJoinedGame({ gameRoom, userId, user })
+    youJoinedGame({ gameRoom, user })
   })
 
   socket.on('users', ({ users }) => {
-    console.log('user socket ', users)
+    // console.log('user socket ', users)
     newPlayers({ users })
   })
 
-  socket.on('someoneStartedPlaying', ({ gameRoom, userId }) => {
-    console.log('SOMEONE ', gameRoom, userId)
-    drawTheNewThrow({ gameRoom, userId })
+  socket.on('someoneStartedPlaying', ({ gameRoom, user }) => {
+    //console.log('SOMEONE ', gameRoom, user)
+    drawTheNewThrow({ gameRoom, user })
   })
 
-  socket.on('someoneRolledTheDice', ({ player }) => {
-    console.log('player ', player)
-    drawTheNewThrow({ player })
+  socket.on('someoneRolledTheDice', ({ gameRoom, user }) => {
+    //console.log('player ', player)
+    drawTheNewThrow({ gameRoom, user })
   })
 
   socket.on('youSuck', data => {
@@ -385,13 +391,8 @@ socket.on('connect', () => {
     cheatingDialog.showModal()
   })
 
-  socket.on('itWorks', ({ player, finalScore }) => {
-    endPlayersTurn({ player, finalScore })
-    console.log('itWorks', player, finalScore)
-  })
-
-  socket.on('stillWorks', ({ player, finalScore }) => {
-    console.log('stillWorks', player, finalScore)
-    endRollersTurn({ player, finalScore })
+  socket.on('usedAllAttempts', ({ finalScore, user }) => {
+    //console.log('itWorks', player, finalScore)
+    endPlayersTurn({ finalScore, user })
   })
 })

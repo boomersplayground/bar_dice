@@ -1,11 +1,6 @@
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 .page {
-  width: 800px;
-  height: 400px;
+  width: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -22,4 +17,20 @@ body {
 
 .hidden {
   display: none;
+}
+
+.diceWrapper {
+  display: flex;
+}
+
+.dice {
+  width: 55px;
+  height: 55px;
+  margin: 20px;
+  border: 1px solid black;
+  border-radius: 15%;
+}
+
+.active {
+  border: 1px solid #FF000C ;
 }

@@ -1,12 +1,16 @@
-const { v4: uuidv4 } = require('uuid');
-const express = require('express');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { v4 as uuidv4 } from 'uuid'
+import express from 'express';
+import http from 'http';
+import { Server } from "socket.io";
+import { createRoomName } from './utilities/cities.js'
+import { areYouCheating, getPlayerScore } from './utilities/common_functions.js'
 const app = express();
-const http = require('http');
 const server = http.createServer(app);
-const { Server } = require("socket.io");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const io = new Server(server);
-const { createRoomName } = require('./utilities/cities')
-
 const rooms = {}
 
 app.use(express.static('public'))
@@ -21,95 +25,76 @@ const readableGame = ({ game }) => {
   return upperGameArray.join(' ')
 }
 
-const areYouCheating = ({ dice, serverDice }) => {
-  const convertedDice = JSON.parse(dice)
-  const user = {
-    [userId]: {
-      username: username
-    }
-  }
-
-  for (let i = 0; i < serverDice.length; i++) {
-    if (serverDice[i].value !== convertedDice[i].value) {
-      return true
-    }
-  }
-
-  return false
-}
-
 io.on('connection', (socket) => {
   socket.on('startRoom', ({ username, gameType }) => {
     // console.log("Start current game", username, gameType)
     const game = readableGame({ game: gameType })
     const gameRoom = rooms[socket.id] = {}
-    const userId = uuidv4()
     const roomName = createRoomName()
+    const user = {
+      id: uuidv4(),
+      username: username,
+      numOfRolls: 0,
+      hasOneBeenFound: false,
+      finalScore: '',
+      noMoreThrowsLeft: false,
+      dice: []
+    }
     gameRoom["gameStarted"] = false
-    gameRoom["currentlyPlaying"] = userId
+    gameRoom["currentlyPlaying"] = user.id
     gameRoom["game"] = game
     gameRoom['roomName'] = roomName
-    gameRoom["users"] = {}
-    gameRoom["users"][userId] = { username: username }
-    gameRoom["users"][userId]["turnsRolled"] = 0
+    gameRoom["users"] = []
+    gameRoom["users"].push(user)
     gameRoom["id"] = socket.id
-    const user = {
-      [userId]: {
-        id: userId,
-        username: username
-      }
-    }
     socket.join(socket.id)
-    socket.emit('roomId', { gameRoom, user, userId })
+    socket.emit('roomId', { gameRoom, user })
   })
 
   socket.on('roomId', ({ roomId, username }) => {
-    // console.log('ri ', roomId, 'su ', username)
-    const userId = uuidv4()
+    const user = {
+      id: uuidv4(),
+      username: username,
+      numOfRolls: 0,
+      hasOneBeenFound: false,
+      finalScore: '',
+      noMoreThrowsLeft: false,
+      dice: []
+    }
+
     socket.join(roomId)
     const gameRoom = rooms[roomId]
-    gameRoom["users"][userId] = { username: username }
-    gameRoom["users"][userId]["turnsRolled"] = 0
+    gameRoom.users.push(user)
     const users = rooms[roomId]["users"]
-    const user = {
-      [userId]: {
-        id: userId,
-        username: username
-      }
-    }
-    console.log('bad ', user)
-    socket.emit('youJoinedRoom', { gameRoom, userId, user })
-    io.to(roomId).emit("users", { roomId, username, users })
+    socket.emit('youJoinedRoom', { gameRoom, user })
+    io.to(roomId).emit("users", { users })
   })
 
-  socket.on('startCurrentGame', ({ gameRoom, user }) => {
+  socket.on('startCurrentGame', ({ gameId, userId }) => {
+    const gameRoom = rooms[gameId]
     const { id } = gameRoom
-    const userId = Object.keys(user)[0]
-    const player = gameRoom["users"][userId]
-    console.log('pp ', player)
-    const playersDice = player["dice"] = []
+    const user = gameRoom["users"].find(playingUser => playingUser.id === userId)
+    user.numOfRolls++
 
     for (let i = 0; i < 5; i++) {
       const dice = {}
       dice.value = Math.floor(Math.random() * 6) + 1
-      dice.isActive = dice.value === 1 ? true : false
-      playersDice.push(dice)
+      if (dice.value === 1) {
+        dice.isActive = true
+        user.hasOneBeenFound = true
+      }
+      user.dice.push(dice)
     }
 
-    console.log('blah ', gameRoom.users[userId])
-    io.to(id).emit('someoneStartedPlaying', { gameRoom, userId })
+    io.to(id).emit('someoneStartedPlaying', { gameRoom, user })
   })
 
-  socket.on('rollTheDice', data => {
-    const { userId, id, dice } = data
-
-    const player = rooms[id]['users'][userId]
-    console.log('1 ', rooms[id]['users'])
-    console.log('2 ', player)
-    console.log('3 ', userId)
-    const serverDice = player.dice
-    const cheater = areYouCheating({ dice, serverDice })
-    const convertedDice = JSON.parse(dice)
+  socket.on('rollTheDice', ({ localDice, gameId, userId }) => {
+    const gameRoom = rooms[gameId]
+    const user = gameRoom.users.find(playingUser => playingUser.id === userId)
+    const { dice } = user
+    const cheater = areYouCheating({ localDice, dice })
+    user.numOfRolls++
 
     if (cheater) {
       const text = "You Suck"
@@ -117,27 +102,60 @@ io.on('connection', (socket) => {
       return
     }
 
-    // if (player.turnsRolled === 3) {
-    //   const finalScore = getPlayerScore({ serverDice, player.turnsRolled })
-    // }
 
-    serverDice.length = 0
-    player.turnsRolled++
+    dice.length = 0
 
-    for (const die of convertedDice) {
+    for (const tempDie in localDice) {
+      const die = localDice[tempDie]
       if (die.isActive) {
-        serverDice.push(die)
+        dice.push(die)
       } else {
         const newInactiveDice = {}
         newInactiveDice.value = Math.floor(Math.random() * 6) + 1
         newInactiveDice.isActive = newInactiveDice.value === 1 ? true : false
-        serverDice.push(newInactiveDice)
+        dice.push(newInactiveDice)
       }
     }
 
-    console.log('p ', player, userId)
+    if (user.numOfRolls >= 3) {
+      user.finalScore = getPlayerScore({ user })
+      io.to(gameId).emit('usedAllAttempts', { finalScore, user, gameRoom })
+      return
+    }
 
-    io.to(id).emit('someoneRolledTheDice', { player, userId })
+    io.to(gameId).emit('someoneRolledTheDice', { gameRoom, user })
+  })
+
+  socket.on('callDice', ({ localDice, gameId, userId }) => {
+    const gameRoom = rooms[gameId]
+    const user = gameRoom.users.find(playingUser => playingUser.id === userId)
+    const { dice } = user
+    const cheater = areYouCheating({ localDice, dice })
+
+    if (cheater) {
+      const text = "You Suck"
+      socket.emit('youSuck', text)
+      return
+    }
+
+    dice.length = 0
+    user.numOfRolls++
+
+    for (const tempDie in localDice) {
+      const die = localDice[tempDie]
+      if (die.isActive) {
+        dice.push(die)
+      } else {
+        const newInactiveDice = {}
+        newInactiveDice.value = Math.floor(Math.random() * 6) + 1
+        newInactiveDice.isActive = newInactiveDice.value === 1 ? true : false
+        dice.push(newInactiveDice)
+      }
+    }
+
+    console.log('gameRoom ', user.dice)
+
+    io.to(gameId).emit('someoneRolledTheDice', { gameRoom, user })
   })
 })
 
