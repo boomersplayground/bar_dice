@@ -124,9 +124,9 @@ io.on('connection', (socket) => {
 
 
     if (user.numOfRolls >= 3) {
-      console.log('3 ', user)
+      // console.log('3 ', user)
       user.finalScore = getPlayerScore({ user })
-      io.to(gameId).emit('usedAllAttempts', { user, gameRoom })
+      io.to(gameId).emit('usedAllAttempts', { gameRoom, user })
       return
     }
 
@@ -145,24 +145,8 @@ io.on('connection', (socket) => {
       return
     }
 
-    dice.length = 0
-    user.numOfRolls++
-
-    for (const tempDie in localDice) {
-      const die = localDice[tempDie]
-      if (die.isActive) {
-        dice.push(die)
-      } else {
-        const newInactiveDice = {}
-        newInactiveDice.value = Math.floor(Math.random() * 6) + 1
-        newInactiveDice.isActive = newInactiveDice.value === 1 ? true : false
-        dice.push(newInactiveDice)
-      }
-    }
-
-    console.log('gameRoom ', user.dice)
-
-    io.to(gameId).emit('someoneRolledTheDice', { gameRoom, user })
+    user.finalScore = getPlayerScore({ user })
+    io.to(gameId).emit('callIt', { gameRoom, user })
   })
 })
 

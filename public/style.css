@@ -23,6 +23,10 @@
   display: flex;
 }
 
+.whoIsPlaying {
+  text-align: center;
+}
+
 .dice {
   width: 55px;
   height: 55px;

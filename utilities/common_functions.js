@@ -14,11 +14,12 @@ export const getPlayerScore = ({ user }) => {
     return `You didn't qualify!`
   }
   const { dice } = user
-  const countOfNumbers = {}
+  const countOfNumbers = {
+    '0': 0
+  }
   let biggestNumber = 0
 
   for (const die of dice) {
-    console.log('d ', die.value, countOfNumbers[die.value], countOfNumbers)
     if (countOfNumbers[die.value]) {
       countOfNumbers[die.value]++
     } else {
@@ -26,11 +27,15 @@ export const getPlayerScore = ({ user }) => {
     }
   }
 
+  if (countOfNumbers['1'] === 5) {
+    return `YOU SHOT ACES!!!  CONGRATS`
+  }
+
   for (const number in countOfNumbers) {
-    if (countOfNumbers[number] > biggestNumber) {
+    if (Number(number) !== 1 && countOfNumbers[number] >= countOfNumbers[biggestNumber] && Number(number) > biggestNumber) {
       biggestNumber = number
     }
   }
 
-  return `You had ${countOfNumbers["1"] + countOfNumbers[biggestNumber]} ${biggestNumber}s`
+  return `${countOfNumbers["1"] + countOfNumbers[biggestNumber]}${biggestNumber}`
 }

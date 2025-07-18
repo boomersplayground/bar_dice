@@ -236,22 +236,22 @@ const drawTheNewThrow = ({ gameRoom, user }) => {
   startCurrentGameBtn.classList.add('hidden')
 }
 
-const endPlayersTurn = ({ user, gameRoom }) => {
-  console.log('EPT')
+const endPlayersTurn = ({ gameRoom, user }) => {
+  console.log('EPT1 ', gameRoom, '2 ', user)
   const p = document.querySelector(".whoIsPlaying")
   const p1 = document.createElement('p')
   const isPlayer = isPlaying({ userId, user })
   barGamesTitle.replaceChildren()
-  const ending = user.hasOneBeenFound ? 'all day!' : ''
+  const ending = !user.hasOneBeenFound ? "" : user.numOfRolls === 3 ? `All Day!` : `in ${user.numOfRolls}`
 
   if (isPlayer) {
     p.classList.add('youArePlaying')
-    p.innerText = `${user.finalScore} ${ending}`
+    p.innerText = `You had ${user.finalScore} ${ending}`
     barGamesTitle.append(p)
     drawDice({ user, gameRoom })
   } else {
     p.classList.add('youAreWaiting')
-    p.innerText = `${user.username} had ${user.finalScore} all day`
+    p.innerText = `${user.username} had ${user.finalScore} ${ending}`
     barGamesTitle.append(p)
     drawDice({ user, gameRoom })
   }
@@ -353,7 +353,6 @@ callDiceBtn.addEventListener('click', () => {
   })
 
   socket.emit('callDice', { localDice, gameId, userId })
-
 })
 
 /* ===============
@@ -405,8 +404,12 @@ socket.on('connect', () => {
     cheatingDialog.showModal()
   })
 
-  socket.on('usedAllAttempts', ({ user, gameRoom }) => {
+  socket.on('usedAllAttempts', ({ gameRoom, user }) => {
     //console.log('itWorks', player, finalScore)
-    endPlayersTurn({ user, gameRoom })
+    endPlayersTurn({ gameRoom, user })
+  })
+
+  socket.on('callIt', ({ gameRoom, user }) => {
+    endPlayersTurn({ gameRoom, user })
   })
 })
