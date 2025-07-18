@@ -65,6 +65,9 @@ let gameId
 /* ===================
   * Gameplay functions
 =================== */
+const isPlaying = ({ userId, user }) => {
+  return userId === user.id
+}
 
 const diceClick = (e, user) => {
   // console.log('u ', user)
@@ -194,8 +197,8 @@ const newPlayers = ({ users }) => {
 }
 
 const drawDice = ({ user, gameRoom, isPlayer }) => {
+  console.log("drawdice")
   const { dice } = user
-  // console.log('3 ', gameId)
   const diceWrapper = document.createElement('div')
   diceWrapper.classList.add('diceWrapper')
   dice.forEach(die => {
@@ -213,19 +216,17 @@ const drawDice = ({ user, gameRoom, isPlayer }) => {
 }
 
 const drawTheNewThrow = ({ gameRoom, user }) => {
+  console.log('DTNT')
   const p = document.createElement('p')
+  const isPlayer = isPlaying({ userId, user })
   barGamesTitle.replaceChildren()
 
-  if (userId === user.id) {
-    // console.log('isplayer')
-    const isPlayer = true
+  if (isPlayer) {
     p.classList.add('whoIsPlaying')
     p.innerText = `You have thrown ${user.numOfRolls} time${user.numOfRolls === 1 ? '' : 's'}`
     barGamesTitle.append(p)
     drawDice({ user, gameRoom, isPlayer })
   } else {
-    // console.log('isnotplayer')
-    const isPlayer = false
     p.classList.add('whoIsPlaying')
     p.innerText = `${user.username} is playing`
     barGamesTitle.append(p)
@@ -235,16 +236,29 @@ const drawTheNewThrow = ({ gameRoom, user }) => {
   startCurrentGameBtn.classList.add('hidden')
 }
 
-const endPlayersTurn = ({ finalScore, user, gameRoom }) => {
+const endPlayersTurn = ({ user, gameRoom }) => {
+  console.log('EPT')
   const p = document.querySelector(".whoIsPlaying")
   const p1 = document.createElement('p')
-  drawDice({ user, gameRoom, isPlayer })
+  const isPlayer = isPlaying({ userId, user })
+  barGamesTitle.replaceChildren()
+  const ending = user.hasOneBeenFound ? 'all day!' : ''
+
+  if (isPlayer) {
+    p.classList.add('youArePlaying')
+    p.innerText = `${user.finalScore} ${ending}`
+    barGamesTitle.append(p)
+    drawDice({ user, gameRoom })
+  } else {
+    p.classList.add('youAreWaiting')
+    p.innerText = `${user.username} had ${user.finalScore} all day`
+    barGamesTitle.append(p)
+    drawDice({ user, gameRoom })
+  }
+
   rollDiceBtn.classList.add('hidden')
   callDiceBtn.classList.add('hidden')
-  p1.classList.add('score', 'center')
-  p1.innerText = `${player.name} rolled ${finalScore}`
   p.append(p1)
-  // console.log('p ', player, 'f ', finalScore)
 }
 
 /* ================
@@ -391,8 +405,8 @@ socket.on('connect', () => {
     cheatingDialog.showModal()
   })
 
-  socket.on('usedAllAttempts', ({ finalScore, user }) => {
+  socket.on('usedAllAttempts', ({ user, gameRoom }) => {
     //console.log('itWorks', player, finalScore)
-    endPlayersTurn({ finalScore, user })
+    endPlayersTurn({ user, gameRoom })
   })
 })

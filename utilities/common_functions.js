@@ -10,6 +10,27 @@ export const areYouCheating = ({ localDice, dice }) => {
 }
 
 export const getPlayerScore = ({ user }) => {
+  if (!user.hasOneBeenFound) {
+    return `You didn't qualify!`
+  }
   const { dice } = user
-  return `Your score is ${dice}`
+  const countOfNumbers = {}
+  let biggestNumber = 0
+
+  for (const die of dice) {
+    console.log('d ', die.value, countOfNumbers[die.value], countOfNumbers)
+    if (countOfNumbers[die.value]) {
+      countOfNumbers[die.value]++
+    } else {
+      countOfNumbers[die.value] = 1
+    }
+  }
+
+  for (const number in countOfNumbers) {
+    if (countOfNumbers[number] > biggestNumber) {
+      biggestNumber = number
+    }
+  }
+
+  return `You had ${countOfNumbers["1"] + countOfNumbers[biggestNumber]} ${biggestNumber}s`
 }
