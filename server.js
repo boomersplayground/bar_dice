@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
       id: uuidv4(),
       username: username,
       numOfRolls: 0,
-      hasOneBeenFound: false,
+      hasQualified: false,
       finalScore: '',
       noMoreThrowsLeft: false,
       dice: []
@@ -56,7 +56,7 @@ io.on('connection', (socket) => {
       id: uuidv4(),
       username: username,
       numOfRolls: 0,
-      hasOneBeenFound: false,
+      hasQualified: false,
       finalScore: '',
       noMoreThrowsLeft: false,
       dice: []
@@ -81,7 +81,7 @@ io.on('connection', (socket) => {
       dice.value = Math.floor(Math.random() * 6) + 1
       if (dice.value === 1) {
         dice.isActive = true
-        user.hasOneBeenFound = true
+        user.hasQualified = true
       }
       user.dice.push(dice)
     }
@@ -119,7 +119,8 @@ io.on('connection', (socket) => {
 
     if (user.numOfRolls >= 3) {
       user.finalScore = getPlayerScore({ user })
-      io.to(gameId).emit('usedAllAttempts', { finalScore, user, gameRoom })
+      io.to(gameId).emit('usedAllAttempts', { dice, user, gameRoom })
+      io.to(gameId).emit('someoneRolledTheDice', { gameRoom, user })
       return
     }
 

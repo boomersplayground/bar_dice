@@ -67,7 +67,6 @@ let gameId
 =================== */
 
 const diceClick = (e, user) => {
-  // console.log('u ', user)
   const dieNumber = parseInt(e.target.dataset.number)
   const isActive = e.target.classList.contains('active')
 
@@ -175,12 +174,10 @@ const youJoinedGame = ({ gameRoom, user }) => {
 }
 
 const newPlayers = ({ users }) => {
-  // console.log("NP ", users)
   playersNameArea.replaceChildren()
   const p = document.createElement('p')
   const usersUl = document.createElement('ul')
   for (const key in users) {
-    // console.log("a ", users[key])
     const userLi = document.createElement('li')
     userLi.classList.add('user')
     userLi.setAttribute('username', users[key].username)
@@ -195,7 +192,6 @@ const newPlayers = ({ users }) => {
 
 const drawDice = ({ user, gameRoom, isPlayer }) => {
   const { dice } = user
-  // console.log('3 ', gameId)
   const diceWrapper = document.createElement('div')
   diceWrapper.classList.add('diceWrapper')
   dice.forEach(die => {
@@ -217,14 +213,12 @@ const drawTheNewThrow = ({ gameRoom, user }) => {
   barGamesTitle.replaceChildren()
 
   if (userId === user.id) {
-    // console.log('isplayer')
     const isPlayer = true
     p.classList.add('whoIsPlaying')
     p.innerText = `You have thrown ${user.numOfRolls} time${user.numOfRolls === 1 ? '' : 's'}`
     barGamesTitle.append(p)
     drawDice({ user, gameRoom, isPlayer })
   } else {
-    // console.log('isnotplayer')
     const isPlayer = false
     p.classList.add('whoIsPlaying')
     p.innerText = `${user.username} is playing`
@@ -235,7 +229,10 @@ const drawTheNewThrow = ({ gameRoom, user }) => {
   startCurrentGameBtn.classList.add('hidden')
 }
 
-const endPlayersTurn = ({ finalScore, user, gameRoom }) => {
+const endPlayersTurn = ({ user, gameRoom }) => {
+  const localUser = JSON.parse(localStorage.getItem('user'))
+  console.log('1 ', localUser)
+  const isPlayer = user.id === localUser.id
   const p = document.querySelector(".whoIsPlaying")
   const p1 = document.createElement('p')
   drawDice({ user, gameRoom, isPlayer })
@@ -244,7 +241,6 @@ const endPlayersTurn = ({ finalScore, user, gameRoom }) => {
   p1.classList.add('score', 'center')
   p1.innerText = `${player.name} rolled ${finalScore}`
   p.append(p1)
-  // console.log('p ', player, 'f ', finalScore)
 }
 
 /* ================
@@ -367,32 +363,26 @@ socket.on('connect', () => {
   })
 
   socket.on('youJoinedRoom', ({ gameRoom, user }) => {
-    // console.log('youJoinedRoom socket ', data)
     youJoinedGame({ gameRoom, user })
   })
 
   socket.on('users', ({ users }) => {
-    // console.log('user socket ', users)
     newPlayers({ users })
   })
 
   socket.on('someoneStartedPlaying', ({ gameRoom, user }) => {
-    //console.log('SOMEONE ', gameRoom, user)
     drawTheNewThrow({ gameRoom, user })
   })
 
   socket.on('someoneRolledTheDice', ({ gameRoom, user }) => {
-    //console.log('player ', player)
     drawTheNewThrow({ gameRoom, user })
   })
 
   socket.on('youSuck', data => {
-    console.log('youSuck ', data)
     cheatingDialog.showModal()
   })
 
-  socket.on('usedAllAttempts', ({ finalScore, user }) => {
-    //console.log('itWorks', player, finalScore)
-    endPlayersTurn({ finalScore, user })
+  socket.on('usedAllAttempts', ({ dice, user, gameRoom }) => {
+    endPlayersTurn({ dice, user, gameRoom })
   })
 })
