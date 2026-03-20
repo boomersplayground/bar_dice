@@ -120,19 +120,20 @@ const game = () => {
 }
 
 const startGame = ({ gameRoom, user }) => {
+  console.log("STARTGAME ", gameRoom, user)
   barGamesTitle.replaceChildren()
   const { id, game, users } = gameRoom
   const currentUserId = user.id
 
-  userId = currentUserId
-  gameId = id
+  const userId = currentUserId
+  const gameId = id
 
   const div = document.createElement('div')
   const p = document.createElement('p')
   const p2 = document.createElement('p')
   roomName.innerText = `Room Name: ${gameRoom.roomName}`
   roomId.innerText = `Room ID: ${id}`
-  p.innerText = `${user.username} you started a ${game} game!!!`
+  p.innerText = `${user} you started a ${game} game!!!`
   p.classList.add('center')
   p2.innerText = `Press "Start Game" to throw first roll`
   p2.classList.add('center')
@@ -141,53 +142,52 @@ const startGame = ({ gameRoom, user }) => {
   page.prepend(div)
   localStorage.setItem('gameRoom', JSON.stringify(gameRoom))
   localStorage.setItem('user', JSON.stringify(user))
-  newPlayers({ users })
+  newPlayers({ gameRoom })
 }
 
 const youJoinedGame = ({ gameRoom, user }) => {
   const { currentlyPlaying, users } = gameRoom
-  const gameCreator = users.find(user => user.id === currentlyPlaying)
-
-  user.id = user.id
-  gameId = gameRoom.id
-
+  const currentPlayer = users.find(user => user.id === currentlyPlaying)
   barGamesTitle.replaceChildren()
+  //
+  // user.id = user.id
+  // gameId = gameRoom.id
   const div = document.createElement('div')
   const p = document.createElement('p')
   const p2 = document.createElement('p')
-  const p3 = document.createElement('p')
-  const p4 = document.createElement('p')
-  div.classList.add("gameDiv")
-  p2.innerText = `Room Name:  ${gameRoom.roomName}`
-  p3.innerText = `Wait for ${gameCreator.username} to finish their turn`
-  p4.innerText = `Room ID:  ${gameRoom.id}`
-  barGamesTitle.append(p3)
-  div.append(p)
-  div.append(p2)
-  div.append(p4)
+  roomName.innerText = `Room Name: ${gameRoom.roomName}`
+  roomId.innerText = `Room ID: ${gameRoom.id}`
+  p.innerText = `${currentPlayer.name} started a ${gameRoom.game} game!!!`
+  p.classList.add('center')
+  p2.classList.add('center')
+  barGamesTitle.append(p)
+  barGamesTitle.append(p2)
   page.prepend(div)
   gameSelectionScreen.classList.add('hidden')
 
   localStorage.setItem('gameRoom', JSON.stringify(gameRoom))
   localStorage.setItem('user', JSON.stringify(user))
-  newPlayers({ users })
+  newPlayers({ gameRoom })
 }
 
-const newPlayers = ({ users }) => {
+const newPlayers = ({ gameRoom }) => {
   playersNameArea.replaceChildren()
+  const users = gameRoom.users
   const p = document.createElement('p')
   const usersUl = document.createElement('ul')
-  for (const key in users) {
+  for (const user of users) {
+    console.log('USER ', user)
     const userLi = document.createElement('li')
     userLi.classList.add('user')
-    userLi.setAttribute('username', users[key].username)
-    userLi.innerText = `${users[key].username}`
+    userLi.setAttribute('username', user.username)
+    userLi.innerText = `${user.name}`
     usersUl.append(userLi)
   }
 
   p.innerText = "People playing in this room!"
   playersNameArea.append(p)
   playersNameArea.append(usersUl)
+  localStorage.setItem('gameRoom', JSON.stringify(gameRoom))
 }
 
 const drawDice = ({ user, gameRoom, isPlayer }) => {
@@ -209,6 +209,10 @@ const drawDice = ({ user, gameRoom, isPlayer }) => {
 }
 
 const drawTheNewThrow = ({ gameRoom, user }) => {
+  const lsGameRoom = localStorage.getItem('gameRoom')
+  const lsUser = localStorage.getItem('user')
+  console.log('111 ', lsGameRoom)
+  console.log('222 ', lsUser)
   const p = document.createElement('p')
   barGamesTitle.replaceChildren()
 
@@ -231,7 +235,7 @@ const drawTheNewThrow = ({ gameRoom, user }) => {
 
 const endPlayersTurn = ({ user, gameRoom }) => {
   const localUser = JSON.parse(localStorage.getItem('user'))
-  console.log('1 ', localUser)
+  console.log('2 ', user)
   const isPlayer = user.id === localUser.id
   const p = document.querySelector(".whoIsPlaying")
   const p1 = document.createElement('p')
@@ -239,7 +243,7 @@ const endPlayersTurn = ({ user, gameRoom }) => {
   rollDiceBtn.classList.add('hidden')
   callDiceBtn.classList.add('hidden')
   p1.classList.add('score', 'center')
-  p1.innerText = `${player.name} rolled ${finalScore}`
+  p1.innerText = `${user.username} rolled ${user.finalScore}`
   p.append(p1)
 }
 
@@ -294,7 +298,8 @@ shipCaptCrewBtn.addEventListener('click', () => {
 startCurrentGameBtn.addEventListener('click', () => {
   const gameRoom = JSON.parse(localStorage.getItem('gameRoom'))
   const user = JSON.parse(localStorage.getItem('user'))
-  socket.emit('startCurrentGame', { gameId, userId })
+  console.log('SCGB ', user, gameRoom)
+  socket.emit('startCurrentGame', { gameRoom, user })
 })
 
 rollDiceBtn.addEventListener('click', () => {
@@ -358,20 +363,23 @@ game()
 ====================== */
 
 socket.on('connect', () => {
-  socket.on('roomId', ({ gameRoom, user }) => {
+  socket.on('roomId', ({ gameRoom, users, user }) => {
+    console.log('ROOMID ', gameRoom, users, user)
     startGame({ gameRoom, user })
   })
 
   socket.on('youJoinedRoom', ({ gameRoom, user }) => {
+    console.log('g111111 ', gameRoom, user)
     youJoinedGame({ gameRoom, user })
   })
 
-  socket.on('users', ({ users }) => {
-    newPlayers({ users })
+  socket.on('users', ({ gameRoom }) => {
+    newPlayers({ gameRoom })
   })
 
-  socket.on('someoneStartedPlaying', ({ gameRoom, user }) => {
-    drawTheNewThrow({ gameRoom, user })
+  socket.on('someoneStartedPlaying', ({ gameRoom }) => {
+    console.log('STP ', gameRoom )
+    drawTheNewThrow({ gameRoom })
   })
 
   socket.on('someoneRolledTheDice', ({ gameRoom, user }) => {
