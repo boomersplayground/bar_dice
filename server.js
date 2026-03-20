@@ -1,11 +1,16 @@
-const { v4: uuidv4 } = require('uuid');
-const express = require('express');
-const app = express();
-const http = require('http');
-const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server);
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import { v4 as uuidv4 } from 'uuid';
+import express from 'express';
+import http from 'http'
+import { Server } from 'socket.io'
+import { createRoomName } from './utilities/cities.js'
 
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const rooms = {}
 
 app.use(express.static('public'))
@@ -32,42 +37,43 @@ const areYouCheating = ({ dice, serverDice }) => {
   return false
 }
 
+const allGames = { rooms: {}}
+
 io.on('connection', (socket) => {
   socket.on('startRoom', data => {
-    console.log("Start current game", data)
-    const { user, gameType } = data.payload
+    const { username: user, gameType } = data
     const game = readableGame({ game: gameType })
-    const gameRoom = rooms[socket.id] = {}
+    const gameRoom = allGames.rooms[socket.id] = {}
     const userId = uuidv4()
+    gameRoom['roomName'] = createRoomName()
     gameRoom["gameStarted"] = false
     gameRoom["game"] = game
     gameRoom["users"] = []
-    gameRoom["users"][userId] = { name: user }
-    gameRoom["gameCreator"] = user
-    gameRoom["users"][userId]["turnsRolled"] = 0
+    gameRoom["users"].push({id: userId, name: user, turnsRolled: 0, dice: [] })
+    gameRoom["currentlyPlaying"] = userId
     gameRoom["id"] = socket.id
-    const users = rooms[socket.id]['users']
+    const users = gameRoom['users']
     socket.join(socket.id)
-    console.log('u ', users)
-    socket.emit('roomId', { gameRoom, users, userId, username: user })
+    socket.emit('roomId', { gameRoom, users, userId, user })
   })
 
-  socket.on('roomId', ({ roomId, user }) => {
-    console.log('ri ', roomId, 'su ', user)
+  socket.on('roomId', ({ roomId, username }) => {
     const userId = uuidv4()
+    const user = username
     socket.join(roomId)
-    const gameRoom = rooms[roomId]
-    gameRoom["users"][userId] = { name: user }
-    gameRoom["users"][userId]["turnsRolled"] = 0
-    const users = rooms[roomId]["users"]
-    console.log('bad ', users)
-    socket.emit('youJoinedRoom', { user })
-    io.to(roomId).emit("users", { roomId, user, users })
+    const gameRoom = allGames.rooms[roomId]
+    gameRoom["users"].push({id: userId, name: user, turnsRolled: 0, dice: [] })
+    const users = gameRoom["users"]
+    console.log('ll ', gameRoom)
+    socket.emit('youJoinedRoom', { user, gameRoom })
+    io.to(roomId).emit("users", { gameRoom })
   })
 
-  socket.on('startCurrentGame', ({ id, username, userId }) => {
-    const users = rooms[id]['users']
-    const player = rooms[id]["users"][userId]
+  socket.on('startCurrentGame', ({ gameRoom, user }) => {
+    console.log('gg ', gameRoom)
+    const { currentlyPlaying, id } = gameRoom
+    const users = gameRoom['users']
+    const player = users.find(user => user.id === currentlyPlaying)
     const playersDice = player["dice"] = []
 
     for (let i = 0; i < 5; i++) {
@@ -77,17 +83,16 @@ io.on('connection', (socket) => {
       playersDice.push(dice)
     }
 
-    console.log("here", player)
-    io.to(id).emit('someoneStartedPlaying', { username, player, userId })
+    io.to(id).emit('someoneStartedPlaying', { gameRoom })
   })
 
   socket.on('rollTheDice', data => {
     const { userId, id, dice } = data
 
     const player = rooms[id]['users'][userId]
-    console.log('1 ', rooms[id]['users'])
-    console.log('2 ', player)
-    console.log('3 ', userId)
+    console.log('1rtd ', rooms[id]['users'])
+    console.log('2rtd ', player)
+    console.log('3rtd ', userId)
     const serverDice = player.dice
     const cheater = areYouCheating({ dice, serverDice })
     const convertedDice = JSON.parse(dice)

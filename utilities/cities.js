@@ -638,12 +638,9 @@ const wi_cities = [
 
 const type = ['Bar', 'Tavern', 'Saloon', 'Dive Bar', 'Pub']
 
-const createRoomName = ({ rooms }) => {
+export const createRoomName = () => {
   const city = `${wi_cities[Math.floor(Math.random() * wi_cities.length - 1) + 1]}` + "'s"
   const establishmentType = type[Math.floor(Math.random() * type.length - 1) + 1]
 
   return `${city} ${establishmentType}`
 }
-
-
-module.exports = { createRoomName }
